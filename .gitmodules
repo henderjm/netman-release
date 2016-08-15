@@ -110,3 +110,9 @@
 [submodule "src/github.com/pivotal-cf-experimental/warrant"]
 	path = src/github.com/pivotal-cf-experimental/warrant
 	url = https://github.com/pivotal-cf-experimental/warrant
+[submodule "src/github.com/vishvananda/netlink"]
+	path = src/github.com/vishvananda/netlink
+	url = https://github.com/vishvananda/netlink
+[submodule "src/github.com/vishvananda/netns"]
+	path = src/github.com/vishvananda/netns
+	url = https://github.com/vishvananda/netns
