@@ -24,6 +24,44 @@ const DEFAULT_TIMEOUT = "5s"
 
 var policyServerPath string
 
+var mockCCServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/v3/apps" {
+		w.WriteHeader(http.StatusTeapot)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{
+  "pagination": {
+    "total_results": 5,
+    "total_pages": 1,
+    "first": {
+      "href": "https://api.[your-domain.com]/v3/apps?page=1&per_page=10"
+    },
+    "last": {
+      "href": "https://api.[your-domain.com]/v3/apps?page=1&per_page=10"
+    }
+  },
+  "resources": [
+    {
+      "guid": "live-app-1-guid"
+    },
+    {
+      "guid": "live-app-2-guid"
+    },
+    {
+      "guid": "live-app-3-guid"
+    },
+    {
+      "guid": "live-app-4-guid"
+    },
+    {
+      "guid": "live-app-5-guid"
+    }
+  ]
+}`))
+}))
+
 var mockUAAServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/check_token" {
 		if r.Header["Authorization"][0] == "Basic dGVzdDp0ZXN0" {
@@ -87,6 +125,7 @@ func DefaultTestConfig() config.Config {
 		UAAClient:          "test",
 		UAAClientSecret:    "test",
 		UAAURL:             mockUAAServer.URL,
+		CCURL:              mockCCServer.URL,
 		TagLength:          1,
 	}
 	return config

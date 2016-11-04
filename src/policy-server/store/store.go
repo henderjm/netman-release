@@ -63,6 +63,8 @@ type Store interface {
 	All() ([]models.Policy, error)
 	Delete([]models.Policy) error
 	Tags() ([]models.Tag, error)
+	// DeleteByGroups([]string) ([]models.Policy, error)
+	// Groups() ([]string, error)
 }
 
 //go:generate counterfeiter -o ../fakes/db.go --fake-name Db . db
