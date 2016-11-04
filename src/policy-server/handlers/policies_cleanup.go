@@ -22,36 +22,40 @@ type ccClient interface {
 type PoliciesCleanup struct {
 	Logger    lager.Logger
 	Store     store.Store
+	Marshaler marshal.Marshaler
 	UAAClient uaaClient
 	CCClient  ccClient
-	Marshaler marshal.Marshaler
 }
 
-func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request, currentUserName string) {
 
 	policies, err := h.Store.All()
 	if err != nil {
-		panic(err)
+		h.Logger.Error("store-list-policies-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "database read failed"}`))
+		return
 	}
-
-	////	// h.Logger.Error("store-list-policies-failed", err)
-	////	// w.WriteHeader(http.StatusInternalServerError)
-	////	// w.Write([]byte(`{"error": "database read failed"}`))
-	////	return
-	////}
 
 	token, err := h.UAAClient.GetToken()
 	if err != nil {
-		panic(err)
+		h.Logger.Error("get-uaa-token-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "get UAA token failed"}`))
+		return
 	}
 
 	ccAppGuids, err := h.CCClient.GetAppGuids(token)
 	if err != nil {
-		panic(err)
+		h.Logger.Error("cc-get-app-guids-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "get app guids from Cloud-Controller failed"}`))
+		return
 	}
 
 	stalePolicies := getStalePolicies(policies, ccAppGuids)
 
+	//h.Logger.Info("I am cleaning up policies")
 	//ret, err := h.Store.DeleteByGroup(staleAppGuids)
 
 	policyCleanup := struct {
@@ -61,11 +65,10 @@ func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	bytes, err := h.Marshaler.Marshal(policyCleanup)
 	if err != nil {
-		panic(err)
-		// h.Logger.Error("marshal-failed", err)
-		// w.WriteHeader(http.StatusInternalServerError)
-		// w.Write([]byte(`{"error": "database marshaling failed"}`))
-		// return
+		h.Logger.Error("marshal-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "marshal response failed"}`))
+		return
 	}
 	w.Write(bytes)
 
@@ -75,17 +78,11 @@ func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func getStalePolicies(policyList []models.Policy, ccList map[string]interface{}) (ret []models.Policy) {
 	for _, p := range policyList {
-		srcApp := p.Source.ID
-		if _, ok := ccList[srcApp]; !ok {
-			ret = append(ret, p)
-			continue
-		}
-
-		dstApp := p.Destination.ID
-		if _, ok := ccList[dstApp]; !ok {
+		_, foundSrc := ccList[p.Source.ID]
+		_, foundDst := ccList[p.Destination.ID]
+		if !foundSrc || !foundDst {
 			ret = append(ret, p)
 		}
 	}
-
 	return ret
 }

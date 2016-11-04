@@ -145,6 +145,8 @@ func main() {
 		Logger:    logger.Session("policies-cleanup"),
 		Store:     dataStore,
 		Marshaler: marshal.MarshalFunc(json.Marshal),
+		UAAClient: uaaRequestClient,
+		// CCClient: ccClient,
 	}
 
 	tagsIndexHandler := &handlers.TagsIndex{

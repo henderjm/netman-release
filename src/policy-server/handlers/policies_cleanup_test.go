@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"encoding/json"
+	"errors"
 	lfakes "lib/fakes"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("PoliciesCleanup", func() {
@@ -79,7 +81,7 @@ var _ = Describe("PoliciesCleanup", func() {
 
 	It("Returns the policies which should be cleaned up", func() {
 
-		handler.ServeHTTP(resp, request)
+		handler.ServeHTTP(resp, request, "")
 		Expect(fakeStore.AllCallCount()).To(Equal(1))
 		Expect(fakeUAAClient.GetTokenCallCount()).To(Equal(1))
 		Expect(fakeCCClient.GetAppGuidsCallCount()).To(Equal(1))
@@ -124,4 +126,69 @@ var _ = Describe("PoliciesCleanup", func() {
 			`))
 
 	})
+
+	Context("When retrieving policies from the db fails", func() {
+		BeforeEach(func() {
+			fakeStore.AllReturns(nil, errors.New("potato"))
+		})
+		It("responds with 500", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(resp.Code).To(Equal(http.StatusInternalServerError))
+			Expect(resp.Body.String()).To(MatchJSON(`{"error": "database read failed"}`))
+		})
+
+		It("logs the full error", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(logger).To(gbytes.Say("store-list-policies-failed.*potato"))
+		})
+	})
+
+	Context("When getting the UAA token fails", func() {
+		BeforeEach(func() {
+			fakeUAAClient.GetTokenReturns("", errors.New("potato"))
+		})
+		It("responds with 500", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(resp.Code).To(Equal(http.StatusInternalServerError))
+			Expect(resp.Body.String()).To(MatchJSON(`{"error": "get UAA token failed"}`))
+		})
+
+		It("logs the full error", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(logger).To(gbytes.Say("get-uaa-token-failed.*potato"))
+		})
+	})
+
+	Context("When getting the apps from the Cloud-Controller fails", func() {
+		BeforeEach(func() {
+			fakeCCClient.GetAppGuidsReturns(nil, errors.New("potato"))
+		})
+		It("responds with 500", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(resp.Code).To(Equal(http.StatusInternalServerError))
+			Expect(resp.Body.String()).To(MatchJSON(`{"error": "get app guids from Cloud-Controller failed"}`))
+		})
+
+		It("logs the full error", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(logger).To(gbytes.Say("cc-get-app-guids-failed.*potato"))
+		})
+	})
+
+	Context("When marshalling the reponse fails", func() {
+		BeforeEach(func() {
+			fakeMarshaler.MarshalReturns(nil, errors.New("potato"))
+		})
+		It("responds with 500", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(resp.Code).To(Equal(http.StatusInternalServerError))
+			Expect(resp.Body.String()).To(MatchJSON(`{"error": "marshal response failed"}`))
+		})
+
+		It("logs the full error", func() {
+			handler.ServeHTTP(resp, request, "")
+			Expect(logger).To(gbytes.Say("marshal-failed.*potato"))
+		})
+	})
+
 })

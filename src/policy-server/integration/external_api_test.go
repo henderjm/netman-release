@@ -342,7 +342,9 @@ var _ = Describe("External API", func() {
 				nil,
 			)
 
-			stalePoliciesStr := `{ "policies": [
+			stalePoliciesStr := `{
+				"total_policies":1,
+				"policies": [
 				 {"source": { "id": "src-app3" }, "destination": { "id": "dead-app", "protocol": "tcp", "port": 3333 } }
 				 ]}
 				`
