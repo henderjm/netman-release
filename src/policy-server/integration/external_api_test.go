@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	libmodels "lib/models"
-	"lib/policy_client"
 	"lib/testsupport"
 	"math/rand"
 	"net/http"
@@ -17,8 +15,6 @@ import (
 	"policy-server/models"
 	"strings"
 	"sync/atomic"
-
-	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -322,49 +318,38 @@ var _ = Describe("External API", func() {
 	})
 
 	FDescribe("cleanup policies", func() {
-		var expectedValue string
 		BeforeEach(func() {
-			policyServerURL := fmt.Sprintf("http://%s:%d/", conf.ListenHost, conf.ListenPort)
-			policyClient := policy_client.NewExternal(lagertest.NewTestLogger("test"), http.DefaultClient, policyServerURL)
-			okPolicy1 := libmodels.Policy{
-				Source: libmodels.Source{
-					ID: "live-app1-guid",
-				},
-				Destination: libmodels.Destination{
-					ID:       "live-app2-guid",
-					Port:     8090,
-					Protocol: "tcp",
-				},
-			}
-
-			okPolicy2 := okPolicy1
-			stalePolicy := okPolicy1
-
-			okPolicy2.Source.ID = "live-app3-guid"
-			okPolicy2.Destination.ID = "live-app4-guid"
-
-			stalePolicy.Source.ID = "live-app5-guid"
-			stalePolicy.Destination.ID = "dead-app-guid"
-
-			Expect(policyClient.AddPolicies("valid-token", []libmodels.Policy{okPolicy1, okPolicy2, stalePolicy})).To(Succeed())
-
-			expectedValue = `{ "policies": [
-				 {"source": { "id": "app1" }, "destination": { "id": "app2", "protocol": "tcp", "port": 8080 } },
-				 {"source": { "id": "app3" }, "destination": { "id": "app4", "protocol": "tcp", "port": 3333 } }
+			body := strings.NewReader(`{ "policies": [
+				 {"source": { "id": "src-app1" }, "destination": { "id": "dst-app1", "protocol": "tcp", "port": 8080 } },
+				 {"source": { "id": "src-app2" }, "destination": { "id": "dst-app2", "protocol": "tcp", "port": 9999 } },
+				 {"source": { "id": "src-app3" }, "destination": { "id": "dead-app", "protocol": "tcp", "port": 3333 } }
 				 ]}
-				`
+				`)
+
+			resp := makeAndDoRequest(
+				"POST",
+				fmt.Sprintf("http://%s:%d/networking/v0/external/policies", conf.ListenHost, conf.ListenPort),
+				body,
+			)
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
 		})
 
-		It("responds with a 200 and lists all policies which contain one of those ids", func() {
+		It("responds with a 200 and lists all stale policies", func() {
 			resp := makeAndDoRequest(
 				"POST",
 				fmt.Sprintf("http://%s:%d/networking/v0/external/policies/cleanup", conf.ListenHost, conf.ListenPort),
 				nil,
 			)
 
+			stalePoliciesStr := `{ "policies": [
+				 {"source": { "id": "src-app3" }, "destination": { "id": "dead-app", "protocol": "tcp", "port": 3333 } }
+				 ]}
+				`
+
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			bodyBytes, _ := ioutil.ReadAll(resp.Body)
-			Expect(bodyBytes).To(MatchJSON(expectedValue))
+			Expect(bodyBytes).To(MatchJSON(stalePoliciesStr))
 		})
 	})
 
