@@ -30,6 +30,11 @@ var mockCCServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWrite
 		return
 	}
 
+	if r.Header["Authorization"][0] != "bearer valid-token" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{
   "pagination": {
@@ -44,19 +49,19 @@ var mockCCServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWrite
   },
   "resources": [
     {
-      "guid": "live-app-1-guid"
+      "guid": "src-app1"
     },
     {
-      "guid": "live-app-2-guid"
+      "guid": "src-app2"
     },
     {
-      "guid": "live-app-3-guid"
+      "guid": "src-app3"
     },
     {
-      "guid": "live-app-4-guid"
+      "guid": "dst-app1"
     },
     {
-      "guid": "live-app-5-guid"
+      "guid": "dst-app2"
     }
   ]
 }`))
@@ -76,6 +81,26 @@ var mockUAAServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWrit
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write([]byte(`{"error_description":"Some requested scopes are missing: network.admin"}`))
 			}
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		return
+	}
+
+	if r.URL.Path == "/oauth/token" {
+		token := `
+		{
+  "access_token" : "valid-token",
+  "token_type" : "bearer",
+  "refresh_token" : "valid-token-r",
+  "expires_in" : 43199,
+  "scope" : "scim.userids openid cloud_controller.read password.write cloud_controller.write",
+  "jti" : "9796365e7c364f41a9d2436aef6b8351"
+}
+		`
+		if r.Header["Authorization"][0] == "Basic dGVzdDp0ZXN0" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(token))
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 		}

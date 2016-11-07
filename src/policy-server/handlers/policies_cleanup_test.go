@@ -76,21 +76,26 @@ var _ = Describe("PoliciesCleanup", func() {
 
 		fakeUAAClient.GetTokenReturns("valid-token", nil)
 		fakeStore.AllReturns(allPolicies, nil)
-		fakeCCClient.GetAppGuidsReturns(map[string]interface{}{"live-guid": nil}, nil)
+		fakeCCClient.GetAllAppGUIDsReturns(map[string]interface{}{"live-guid": nil}, nil)
 	})
 
-	It("Returns the policies which should be cleaned up", func() {
+	It("Returns the policies which should be cleaned up without tags", func() {
 
 		handler.ServeHTTP(resp, request, "")
 		Expect(fakeStore.AllCallCount()).To(Equal(1))
 		Expect(fakeUAAClient.GetTokenCallCount()).To(Equal(1))
-		Expect(fakeCCClient.GetAppGuidsCallCount()).To(Equal(1))
-		Expect(fakeCCClient.GetAppGuidsArgsForCall(0)).To(Equal("valid-token"))
+		Expect(fakeCCClient.GetAllAppGUIDsCallCount()).To(Equal(1))
+		Expect(fakeCCClient.GetAllAppGUIDsArgsForCall(0)).To(Equal("valid-token"))
 		Expect(fakeMarshaler.MarshalCallCount()).To(Equal(1))
+		policies := allPolicies[1:]
+		for i, _ := range policies {
+			policies[i].Source.Tag = ""
+			policies[i].Destination.Tag = ""
+		}
 		policyCleanup := struct {
 			TotalPolicies int             `json:"total_policies"`
 			Policies      []models.Policy `json:"policies"`
-		}{len(allPolicies[1:]), allPolicies[1:]}
+		}{2, policies}
 		Expect(fakeMarshaler.MarshalArgsForCall(0)).To(Equal(policyCleanup))
 
 		Expect(resp.Code).To(Equal(http.StatusOK))
@@ -99,24 +104,20 @@ var _ = Describe("PoliciesCleanup", func() {
 			"policies": [
 			{
 				"source": {
-					"id": "dead-guid",
-					"tag": "tag"
+					"id": "dead-guid"
 				},
 				"destination": {
 					"id": "live-guid",
-					"tag": "tag",
 					"protocol": "udp",
 					"port": 1234
 				}
 			},
 			{
 				"source": {
-					"id": "live-guid",
-					"tag": "tag"
+					"id": "live-guid"
 				},
 				"destination": {
 					"id": "dead-guid",
-					"tag": "tag",
 					"protocol": "udp",
 					"port": 1234
 				}
@@ -161,7 +162,7 @@ var _ = Describe("PoliciesCleanup", func() {
 
 	Context("When getting the apps from the Cloud-Controller fails", func() {
 		BeforeEach(func() {
-			fakeCCClient.GetAppGuidsReturns(nil, errors.New("potato"))
+			fakeCCClient.GetAllAppGUIDsReturns(nil, errors.New("potato"))
 		})
 		It("responds with 500", func() {
 			handler.ServeHTTP(resp, request, "")

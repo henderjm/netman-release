@@ -4,12 +4,12 @@ package fakes
 import "sync"
 
 type CCClient struct {
-	GetAppGuidsStub        func(token string) (map[string]interface{}, error)
-	getAppGuidsMutex       sync.RWMutex
-	getAppGuidsArgsForCall []struct {
+	GetAllAppGUIDsStub        func(token string) (map[string]interface{}, error)
+	getAllAppGUIDsMutex       sync.RWMutex
+	getAllAppGUIDsArgsForCall []struct {
 		token string
 	}
-	getAppGuidsReturns struct {
+	getAllAppGUIDsReturns struct {
 		result1 map[string]interface{}
 		result2 error
 	}
@@ -17,35 +17,35 @@ type CCClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *CCClient) GetAppGuids(token string) (map[string]interface{}, error) {
-	fake.getAppGuidsMutex.Lock()
-	fake.getAppGuidsArgsForCall = append(fake.getAppGuidsArgsForCall, struct {
+func (fake *CCClient) GetAllAppGUIDs(token string) (map[string]interface{}, error) {
+	fake.getAllAppGUIDsMutex.Lock()
+	fake.getAllAppGUIDsArgsForCall = append(fake.getAllAppGUIDsArgsForCall, struct {
 		token string
 	}{token})
-	fake.recordInvocation("GetAppGuids", []interface{}{token})
-	fake.getAppGuidsMutex.Unlock()
-	if fake.GetAppGuidsStub != nil {
-		return fake.GetAppGuidsStub(token)
+	fake.recordInvocation("GetAllAppGUIDs", []interface{}{token})
+	fake.getAllAppGUIDsMutex.Unlock()
+	if fake.GetAllAppGUIDsStub != nil {
+		return fake.GetAllAppGUIDsStub(token)
 	} else {
-		return fake.getAppGuidsReturns.result1, fake.getAppGuidsReturns.result2
+		return fake.getAllAppGUIDsReturns.result1, fake.getAllAppGUIDsReturns.result2
 	}
 }
 
-func (fake *CCClient) GetAppGuidsCallCount() int {
-	fake.getAppGuidsMutex.RLock()
-	defer fake.getAppGuidsMutex.RUnlock()
-	return len(fake.getAppGuidsArgsForCall)
+func (fake *CCClient) GetAllAppGUIDsCallCount() int {
+	fake.getAllAppGUIDsMutex.RLock()
+	defer fake.getAllAppGUIDsMutex.RUnlock()
+	return len(fake.getAllAppGUIDsArgsForCall)
 }
 
-func (fake *CCClient) GetAppGuidsArgsForCall(i int) string {
-	fake.getAppGuidsMutex.RLock()
-	defer fake.getAppGuidsMutex.RUnlock()
-	return fake.getAppGuidsArgsForCall[i].token
+func (fake *CCClient) GetAllAppGUIDsArgsForCall(i int) string {
+	fake.getAllAppGUIDsMutex.RLock()
+	defer fake.getAllAppGUIDsMutex.RUnlock()
+	return fake.getAllAppGUIDsArgsForCall[i].token
 }
 
-func (fake *CCClient) GetAppGuidsReturns(result1 map[string]interface{}, result2 error) {
-	fake.GetAppGuidsStub = nil
-	fake.getAppGuidsReturns = struct {
+func (fake *CCClient) GetAllAppGUIDsReturns(result1 map[string]interface{}, result2 error) {
+	fake.GetAllAppGUIDsStub = nil
+	fake.getAllAppGUIDsReturns = struct {
 		result1 map[string]interface{}
 		result2 error
 	}{result1, result2}
@@ -54,8 +54,8 @@ func (fake *CCClient) GetAppGuidsReturns(result1 map[string]interface{}, result2
 func (fake *CCClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getAppGuidsMutex.RLock()
-	defer fake.getAppGuidsMutex.RUnlock()
+	fake.getAllAppGUIDsMutex.RLock()
+	defer fake.getAllAppGUIDsMutex.RUnlock()
 	return fake.invocations
 }
 

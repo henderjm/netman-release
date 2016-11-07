@@ -16,7 +16,7 @@ type uaaClient interface {
 
 //go:generate counterfeiter -o ../fakes/cc_client.go --fake-name CCClient . ccClient
 type ccClient interface {
-	GetAppGuids(token string) (map[string]interface{}, error)
+	GetAllAppGUIDs(token string) (map[string]interface{}, error)
 }
 
 type PoliciesCleanup struct {
@@ -45,7 +45,7 @@ func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request, cu
 		return
 	}
 
-	ccAppGuids, err := h.CCClient.GetAppGuids(token)
+	ccAppGuids, err := h.CCClient.GetAllAppGUIDs(token)
 	if err != nil {
 		h.Logger.Error("cc-get-app-guids-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -57,6 +57,11 @@ func (h *PoliciesCleanup) ServeHTTP(w http.ResponseWriter, req *http.Request, cu
 
 	//h.Logger.Info("I am cleaning up policies")
 	//ret, err := h.Store.DeleteByGroup(staleAppGuids)
+
+	for i, _ := range stalePolicies {
+		stalePolicies[i].Source.Tag = ""
+		stalePolicies[i].Destination.Tag = ""
+	}
 
 	policyCleanup := struct {
 		TotalPolicies int             `json:"total_policies"`

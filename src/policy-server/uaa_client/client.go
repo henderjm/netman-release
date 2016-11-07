@@ -44,7 +44,11 @@ type CheckTokenResponse struct {
 }
 
 func (c *Client) GetToken() (string, error) {
-	return c.WarrantClient.GetToken(c.Name, c.Secret)
+	token, err := c.WarrantClient.GetToken(c.Name, c.Secret)
+	if err != nil {
+		return "", fmt.Errorf("get token failed: %s", err)
+	}
+	return token, nil
 }
 
 func (c *Client) CheckToken(token string) (CheckTokenResponse, error) {

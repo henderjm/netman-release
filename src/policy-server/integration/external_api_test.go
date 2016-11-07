@@ -317,14 +317,13 @@ var _ = Describe("External API", func() {
 		})
 	})
 
-	FDescribe("cleanup policies", func() {
+	Describe("cleanup policies", func() {
 		BeforeEach(func() {
 			body := strings.NewReader(`{ "policies": [
-				 {"source": { "id": "src-app1" }, "destination": { "id": "dst-app1", "protocol": "tcp", "port": 8080 } },
-				 {"source": { "id": "src-app2" }, "destination": { "id": "dst-app2", "protocol": "tcp", "port": 9999 } },
-				 {"source": { "id": "src-app3" }, "destination": { "id": "dead-app", "protocol": "tcp", "port": 3333 } }
-				 ]}
-				`)
+				{"source": { "id": "src-app1" }, "destination": { "id": "dst-app1", "protocol": "tcp", "port": 8080 } },
+				{"source": { "id": "src-app2" }, "destination": { "id": "dst-app2", "protocol": "tcp", "port": 9999 } },
+				{"source": { "id": "src-app3" }, "destination": { "id": "dead-app", "protocol": "tcp", "port": 3333 } }
+				]} `)
 
 			resp := makeAndDoRequest(
 				"POST",
