@@ -41,6 +41,7 @@ type netOutProvider interface {
 	Initialize(logger lager.Logger, containerHandle string, containerIP net.IP, overlayNetwork string) error
 	Cleanup(containerHandle string) error
 	InsertRule(containerHandle string, rule garden.NetOutRule, containerIP string) error
+	InsertRules(containerHandle string, rule []garden.NetOutRule, containerIP string) error
 }
 
 type Manager struct {
@@ -192,11 +193,9 @@ type BulkNetOutInputs struct {
 }
 
 func (m *Manager) BulkNetOut(containerHandle string, inputs BulkNetOutInputs) error {
-	for _, rule := range inputs.NetOutRules {
-		err := m.NetOutProvider.InsertRule(containerHandle, rule, inputs.ContainerIP)
-		if err != nil {
-			return fmt.Errorf("insert rule: %s", err)
-		}
+	err := m.NetOutProvider.InsertRules(containerHandle, inputs.NetOutRules, inputs.ContainerIP)
+	if err != nil {
+		return fmt.Errorf("insert rules: %s", err)
 	}
 	return nil
 }

@@ -39,6 +39,16 @@ type NetOutProvider struct {
 	insertRuleReturns struct {
 		result1 error
 	}
+	InsertRulesStub        func(containerHandle string, rule []garden.NetOutRule, containerIP string) error
+	insertRulesMutex       sync.RWMutex
+	insertRulesArgsForCall []struct {
+		containerHandle string
+		rule            []garden.NetOutRule
+		containerIP     string
+	}
+	insertRulesReturns struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -147,6 +157,46 @@ func (fake *NetOutProvider) InsertRuleReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *NetOutProvider) InsertRules(containerHandle string, rule []garden.NetOutRule, containerIP string) error {
+	var ruleCopy []garden.NetOutRule
+	if rule != nil {
+		ruleCopy = make([]garden.NetOutRule, len(rule))
+		copy(ruleCopy, rule)
+	}
+	fake.insertRulesMutex.Lock()
+	fake.insertRulesArgsForCall = append(fake.insertRulesArgsForCall, struct {
+		containerHandle string
+		rule            []garden.NetOutRule
+		containerIP     string
+	}{containerHandle, ruleCopy, containerIP})
+	fake.recordInvocation("InsertRules", []interface{}{containerHandle, ruleCopy, containerIP})
+	fake.insertRulesMutex.Unlock()
+	if fake.InsertRulesStub != nil {
+		return fake.InsertRulesStub(containerHandle, rule, containerIP)
+	} else {
+		return fake.insertRulesReturns.result1
+	}
+}
+
+func (fake *NetOutProvider) InsertRulesCallCount() int {
+	fake.insertRulesMutex.RLock()
+	defer fake.insertRulesMutex.RUnlock()
+	return len(fake.insertRulesArgsForCall)
+}
+
+func (fake *NetOutProvider) InsertRulesArgsForCall(i int) (string, []garden.NetOutRule, string) {
+	fake.insertRulesMutex.RLock()
+	defer fake.insertRulesMutex.RUnlock()
+	return fake.insertRulesArgsForCall[i].containerHandle, fake.insertRulesArgsForCall[i].rule, fake.insertRulesArgsForCall[i].containerIP
+}
+
+func (fake *NetOutProvider) InsertRulesReturns(result1 error) {
+	fake.InsertRulesStub = nil
+	fake.insertRulesReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *NetOutProvider) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -156,6 +206,8 @@ func (fake *NetOutProvider) Invocations() map[string][][]interface{} {
 	defer fake.cleanupMutex.RUnlock()
 	fake.insertRuleMutex.RLock()
 	defer fake.insertRuleMutex.RUnlock()
+	fake.insertRulesMutex.RLock()
+	defer fake.insertRulesMutex.RUnlock()
 	return fake.invocations
 }
 
